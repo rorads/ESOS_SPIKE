@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "esos-spike"
+version = "0.1.0"
+description = ""
+authors = ["Rory Scott <rory.scott@paconsulting.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+openai = "^1.14.2"
+tika = "^2.6.0"
+tiktoken = "^0.6.0"
+pandas = "^2.2.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
