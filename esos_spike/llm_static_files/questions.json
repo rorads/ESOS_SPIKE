@@ -1,0 +1,148 @@
+{
+    "questions": [
+      {
+        "key": "GeneralCompliance_1",
+        "question_number": 1,
+        "question_text": "Has the ESOS report been produced before the compliance date for the relevant compliance period?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "ReportStructure_2",
+        "question_number": 2,
+        "question_text": "Is the report structured to include all mandatory information as specified in the guidelines?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "OrganisationalDetails_3",
+        "question_number": 3,
+        "question_text": "Are the organisational name, the number of companies within the participant group, and a corporate group structure chart or equivalent information accurately provided?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "OrganisationalDetails_4",
+        "question_number": 4,
+        "question_text": "Is there a detailed description of the relationship between organisations in the participant group?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "OrganisationalChanges_5",
+        "question_number": 5,
+        "question_text": "If applicable, are changes in the participant group (both additions and removals) between the qualification date and the compliance date accurately documented?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "PersonnelInvolved_6",
+        "question_number": 6,
+        "question_text": "Are the details of the board level director(s) responsible for sign-off, the lead assessor, and any other significant personnel involved accurately listed?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "EnergyConsumptionSavings_7",
+        "question_number": 7,
+        "question_text": "Does the report correctly detail the total energy consumption, significant energy consumption calculations, energy subtotals by organisational purpose, and energy intensity ratios?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "EnergyConsumptionSavings_8",
+        "question_number": 8,
+        "question_text": "Are the estimates of energy savings achieved by the participant since the previous compliance period clearly outlined and properly estimated?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "EnergyAuditsComplianceRoutes_9",
+        "question_number": 9,
+        "question_text": "For each energy audit and/or alternative compliance route used, does the report properly cover scope and coverage, summary of outputs, energy savings measures identified, and estimated savings achievable?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "EnergyAuditsComplianceRoutes_10",
+        "question_number": 10,
+        "question_text": "Is relevant information regarding the implementation of energy savings measures provided?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "ISO50001CertificationDetails_11",
+        "question_number": 11,
+        "question_text": "For participants with ISO 50001 certification covering all energy supplies, does the report include the required information regarding total energy consumption, energy intensity ratios, and details of energy performance improvements?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "ISO50001CertificationDetails_12",
+        "question_number": 12,
+        "question_text": "Are documented outcomes of performance evaluations and identified opportunities for improving energy performance properly included and detailed?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "AdditionalInformationSharing_13",
+        "question_number": 13,
+        "question_text": "Does the report include any additional, relevant information that supports the ESOS assessment or findings?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "AdditionalInformationSharing_14",
+        "question_number": 14,
+        "question_text": "Has the report, or relevant parts of it, been shared with other undertakings within the participant group as required?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "AlternativeComplianceRoutes_15",
+        "question_number": 15,
+        "question_text": "For each alternative compliance route used, does the report correctly detail the coverage and percentage of total energy consumption?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "AlternativeComplianceRoutes_16",
+        "question_number": 16,
+        "question_text": "Is there a proper summary of the measures for reducing energy consumption recommended through alternative compliance routes, including potential annual reductions in energy spend and consumption?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "ImplementationDetails_17",
+        "question_number": 17,
+        "question_text": "Does the report include suggested programmes for implementing energy savings opportunities, including timescales, costs and benefits, and a payback period?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      },
+      {
+        "key": "ImplementationDetails_18",
+        "question_number": 18,
+        "question_text": "Are considerations related to minimum energy efficiency standards, availability of funding and support for energy savings opportunities, and other possible sources of support adequately addressed?",
+        "score_out_of_10": "",
+        "rationale": "",
+        "quotes": []
+      }
+    ]
+  }

@@ -1,1 +1,4 @@
 data/raw-ESOS-reports/*
+.doc_cache
+.answer_cache
+.env
