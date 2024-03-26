@@ -9,3 +9,6 @@ data/processed/*
 !data/processed/.gitkeep
 
 .env
+
+# Ingore all __pycache__ directories, regardless of depth
+**/__pycache__/*

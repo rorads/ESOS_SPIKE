@@ -33,6 +33,7 @@ class ParseDirectory:
         self.mock_answers = json.load(open('esos_spike/llm_static_files/mock_response.json'))
         self.row_ids = None
         self.results = None
+        self.results_df = None
         logging.basicConfig(level=logging_info_level)
 
     def get_filenames_from_directory(self):
@@ -366,10 +367,32 @@ class ParseDirectory:
             results = self.paralell_enhance_documents()
             with open('data/cached/results.pkl', 'wb+') as f:
                 pickle.dump(results, f)
-            
-        
-        return results
+                
+        # Remove none values from the results list
+        results_cleaned = [result for result in results if result is not None]        
+        self.results = results_cleaned
     
+    
+    def load_results_df(self):
+        """
+        Load the results into a pandas DataFrame.
+
+        This function iterates over the results, which is expected to be a list of tuples.
+        Each tuple contains a document ID and a dictionary with a 'questions' key.
+        The value of the 'questions' key is a list of dictionaries, where each dictionary represents a question.
+        The function normalizes each list of questions into a DataFrame, sets the index of the DataFrame to the document ID,
+        and appends the DataFrame to a list.
+        Finally, it concatenates all the DataFrames in the list into a single DataFrame and stores it in the results_df attribute.
+        """
+        
+        result_df_list = []
+
+        for result in self.results:
+            result_df = pd.json_normalize(result[1]['questions'])
+            result_df.index = [result[0] for _ in range(len(result_df))]
+            result_df_list.append(result_df)
+
+        self.results_df = pd.concat(result_df_list)
 
 if __name__ == '__main__':
    
@@ -377,7 +400,8 @@ if __name__ == '__main__':
 
     parse_dir.process_documents()
     
-    results = parse_dir.enhance_documents(from_cache=True)
+    parse_dir.enhance_documents(from_cache=True)
     
-    print(len(results))
+    parse_dir.load_results_df()
     
+    print(len(parse_dir.results_df))
