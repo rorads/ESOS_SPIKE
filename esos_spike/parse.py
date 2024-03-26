@@ -8,10 +8,13 @@ import json
 from concurrent.futures import as_completed
 import diskcache
 import hashlib
+import logging
+import concurrent.futures
+from tqdm import tqdm
+import pickle
 
 # Create a cache directory
 doc_cache = diskcache.Cache('.doc_cache')
-answer_cache = diskcache.Cache('.answer_cache')
 
 # load openai api key from .env file
 load_dotenv()
@@ -20,12 +23,17 @@ client = OpenAI()
 
 
 class ParseDirectory:
-    def __init__(self, raw_files_directory):
+    def __init__(self, raw_files_directory, mock=False, logging_info_level=logging.INFO):
         self.raw_files_directory = raw_files_directory
         self.data_file_path = 'documents.json'
         self.questions = json.load(open('esos_spike/llm_static_files/questions.json'))
         self.documents_df = None
         self.skip_files = None
+        self.mock = mock
+        self.mock_answers = json.load(open('esos_spike/llm_static_files/mock_response.json'))
+        self.row_ids = None
+        self.results = None
+        logging.basicConfig(level=logging_info_level)
 
     def get_filenames_from_directory(self):
         """
@@ -98,10 +106,14 @@ class ParseDirectory:
         """
         documents = []
         skip_files = []
-
+        
         file_names = self.get_filenames_from_directory()
+        
+        logging.info(f"Processing {len(file_names)} files")
+        
         for file_name in file_names:
             if self.extract_filetype(file_name) not in ['.pdf', '.docx', '.doc']:
+                logging.info(f"Skipping {file_name} as filetype not supported.")
                 skip_files.append({file_name: "Unsupported file type"})
                 continue
 
@@ -128,9 +140,8 @@ class ParseDirectory:
 
         self.documents_df = pd.DataFrame(documents)
         self.skip_files = skip_files
-    
-    
-    @answer_cache.memoize(ignore=["self", "document_content"])
+
+
     def enhance_openai(self, document_content, document_id):
         """
         Enhance a document with OpenAI API.
@@ -147,6 +158,95 @@ class ParseDirectory:
 
         if num_tokens > 120000:
             raise ValueError("The document is too long to process.")
+        
+        
+        # Create a hash of the document content
+        content_hash = hashlib.md5(content.encode()).hexdigest()
+
+        # Create the cache file path
+        cache_file_path = f'data/processed/{document_id}_{content_hash}.json'
+
+        # If the cache file exists, load the data from the file
+        if os.path.exists(cache_file_path):
+            logging.debug(f"Loading data from cache for document_id: {document_id}")
+            with open(cache_file_path, 'r') as f:
+                return json.load(f)
+
+        # If the cache file does not exist, process the document and save the data to the file
+        prompt = f"""
+        Below is a json representation of a set of questions which I want you to answer about the document which follows. 
+        
+        It is crucial that you respect structure of the JSON string. 
+        
+        Be sure to answer all the questions in the JSON string. If a document looks like it should include 
+        something a question requires, but it is not there, set the score to 0 and provide a rationale.
+        
+        For the quotes, ensure that enough context is provided to understand the quote and to use ctrl+f to find it in the document.
+        
+        Do not include newlines or extra spaces in the JSON string, and do not include the code block markers 
+        (```) in the JSON string. 
+        
+        JUST RETURN THE JSON AND MAKE SURE IT'S VALID.
+        
+        JSON String:
+        
+        ```
+        {json.dumps(self.questions)}
+        ```
+        
+        Document to evaluate:
+        {content}
+        """
+        
+        if not self.mock:
+            messages = [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt},
+                # Add more messages here
+            ]
+
+            response = client.chat.completions.create(
+                model="gpt-4-turbo-preview",
+                temperature=0.5,
+                messages=messages,
+                max_tokens=4096
+            )
+            
+            # parse the response to get the JSON string, and return it as a dict
+            response_dict = json.loads(response.choices[0].message.content)
+
+            # check te response_dict is not None. If it is, print the document_id
+            if response_dict is None:
+                logging.error(f"response_dict is None for document_id: {document_id}")
+        else:
+            response_dict = self.mock_answers
+        
+        # Save the data to the cache file
+        with open(cache_file_path, 'w') as f:
+            json.dump(response_dict, f, indent=4)
+
+        return response_dict
+    
+    
+    def deprecated_enhance_openai(self, document_content, document_id):
+        """
+        Enhance a document with OpenAI API.
+
+        Parameters:
+        document_row (Series): A row from the documents dataframe.
+
+        Returns:
+        dict: The data structure containing questions with responses from OpenAI.
+        """
+
+        content = document_content
+        num_tokens = self.num_tokens_from_string(content)
+
+        if num_tokens > 120000:
+            raise ValueError("The document is too long to process.")
+        
+        if self.mock:
+            return self.mock_answers
         
         prompt = f"""
         Below is a json representation of a set of questions which I want you to answer about the document which follows. 
@@ -191,24 +291,33 @@ class ParseDirectory:
 
         # check te response_dict is not None. If it is, print the document_id
         if response_dict is None:
-            print(f"response_dict is None for document_id: {document_id}")
+            logging.error(f"response_dict is None for document_id: {document_id}")
         
         return response_dict
     
     
     def paralell_enhance_documents(self):
         """
+        Enhance documents in parallel using OpenAI API.
+
+        This function wraps the enhance_openai method in a function that takes a single argument,
+        then uses a ThreadPoolExecutor to execute this function on each row of the documents dataframe in parallel.
+        It uses a maximum of 60 concurrent threads.
+        If the enhance_openai method raises a ValueError for a row (for example, if the document is too long),
+        it logs an error message and skips that row.
+        It displays a progress bar for the parallel execution using tqdm.
+        It collects the results from the futures as they complete and returns them as a list.
+
+        Returns:
+        list: A list of tuples, where each tuple contains a document ID and the result of the enhance_openai method for that document.
         """
-        
-        import concurrent.futures
-        from tqdm import tqdm
         
         # wrap the function to be executed with a single argument
         def process_row(row):
             try:
-                return self.enhance_openai(row['content'], row['id'])
+                return row['id'], self.enhance_openai(row['content'], row['id'])
             except ValueError as e:
-                print(f"skipping {row['id']}: {str(e)}")
+                logging.error(f"skipping {row['id']}: {str(e)}")
 
         # Define the maximum number of concurrent threads to use
         max_threads = 60 
@@ -227,31 +336,48 @@ class ParseDirectory:
 
         return results
     
+    def enhance_documents(self, from_cache = True):
+        """
+        Wrapper function to run paralell_enhance_documents and save the results to a pickle file.
+        By default, it loads the results from the cache file. Sett from_cache to False to re-run 
+        the process and overwrite the cache file.
+        
+        Note that this is independed from the document level caching which is used in 
+        `enhance_openai()`. To clear this cache you will need to manually delete
+        the files in `data/processed`.
+        
+        Parameters:
+        from_cache (bool): Load the results from the cache file. Default is True.
+        
+        Returns:
+        list: A list of tuples, where each tuple contains a document ID and the result of the enhance_openai method for that document.
+        """
+        
+        if from_cache:
+            logging.debug("Loading results from cache held in data/cached/results.pkl")
+            try:
+                with open('data/cached/results.pkl', 'rb') as f:
+                    results = pickle.load(f)
+            except FileNotFoundError as e:
+                logging.error("No cache file was found. Set `from_cache=False`...")
+                raise e
+        else:
+            logging.debug("Running enhancement and saving to data/cached/results.pkl")
+            results = self.paralell_enhance_documents()
+            with open('data/cached/results.pkl', 'wb+') as f:
+                pickle.dump(results, f)
+            
+        
+        return results
     
-    def clear_none_cache_entries(self):
-        """
-        Clear the cache of entries that are None.
-        """
-        for key in answer_cache.iterkeys():
-            # if cache[key] is None:
-            #     cache.pop(key)
-            pass
 
 if __name__ == '__main__':
    
-    parse_dir = ParseDirectory('data/raw-ESOS-reports/')
-    parse_dir.clear_none_cache_entries()
+    parse_dir = ParseDirectory('data/raw-ESOS-reports/', mock=False, logging_info_level=logging.DEBUG)
+
     parse_dir.process_documents()
-
-    # # Enhance the first document with OpenAI
-    # document_row = parse_dir.documents_df.iloc[3]
-    # print(f"Document ID: {document_row['id']}")
-    # print("\n\n--------\n\n")
-    # enhanced_document = parse_dir.enhance_openai(document_row)
-    # print(json.dumps(enhanced_document))
     
-    results = parse_dir.paralell_enhance_documents()
-    print(results)
-
-    answer_cache.get()
+    results = parse_dir.enhance_documents(from_cache=True)
+    
+    print(len(results))
     
