@@ -1,3 +1,5 @@
+.venv/
+
 data/raw-ESOS-reports/*
 
 .doc_cache

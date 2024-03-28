@@ -30,7 +30,19 @@ def __(ParseDirectory, logging):
 
 @app.cell
 def __(parse_dir):
-    set(list(parse_dir.results_df.index))
+    parse_dir.results_df
+    return
+
+
+@app.cell
+def __(parse_dir):
+    parse_dir.documents_df
+    return
+
+
+@app.cell
+def __(parse_dir):
+    parse_dir.documents_df['num_tokens'].plot(kind='hist')
     return
 
 
@@ -38,12 +50,12 @@ def __(parse_dir):
 def __(mo, parse_dir):
     avg_score_table = mo.ui.table(parse_dir.results_df.pivot_table(index='question_text', values='score_out_of_10', aggfunc='mean'), selection=None)
 
-    full_table = mo.ui.table(parse_dir.results_df, selection=None)
+    full_table = mo.ui.table(parse_dir.documents_df, selection=None)
 
     unique_questions = parse_dir.results_df['question_text'].unique()
     question = mo.ui.dropdown(unique_questions, unique_questions[0], full_width=True)
 
-    unique_documents = parse_dir.results_df['document_id'].unique()
+    unique_documents = parse_dir.documents_df['id'].unique()
     document = mo.ui.dropdown(unique_documents, unique_documents[0], full_width=True)
 
 
@@ -84,40 +96,44 @@ def __(parse_dir, plt, question):
 
 
 @app.cell
-def __():
+def __(mo, parse_dir):
+    mo.ui.table(parse_dir.results_df[parse_dir.results_df['key'] == 'ReportStructure_2'], selection=None)
     return
 
 
 @app.cell
-def __(document, fig, full_table, mo, question):
+def __(fig, mo, question):
     score_tab = mo.vstack([
         mo.md("### Histogram of Scores"),
         question,
         fig
     ])
 
-    document_tab = mo.vstack([
-        mo.md("### Document Table"),
-        document,
-        mo.md(f"#### Table of all questions and scores for {document.value}"),
-        full_table[full_table['document_name'] == document.value]
-    ])
+    # document_tab = mo.vstack([
+    #     mo.md("### Document Table"),
+    #     document,
+    #     mo.md(f"#### Table of all questions and scores for {document.value}"),
+    #     parse_dir.results_df[document.value] if document.value in parse_dir.results_df.index else mo.md("Document not parsed.")
+    # ])
 
     mo.tabs({
         "Scores by Question":score_tab,
-        "Document Table":document_tab,
+        "Test": mo.md("Ipsum")
     })
-    return document_tab, score_tab
+    return score_tab,
 
 
-@app.cell
-def __():
-    return
+app._unparsable_cell(
+    r"""
+    test_grid = []
 
-
-@app.cell
-def __():
-    return
+    for letter in ['a', 'b', 'c']:
+        
+        for number in [1, 2, 3]:
+            
+    """,
+    name="__"
+)
 
 
 if __name__ == "__main__":
