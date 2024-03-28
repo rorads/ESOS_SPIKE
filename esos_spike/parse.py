@@ -14,7 +14,7 @@ from tqdm import tqdm
 import pickle
 
 # Create a cache directory
-doc_cache = diskcache.Cache('.doc_cache')
+doc_cache = diskcache.Cache(".doc_cache")
 
 # load openai api key from .env file
 load_dotenv()
@@ -23,14 +23,18 @@ client = OpenAI()
 
 
 class ParseDirectory:
-    def __init__(self, raw_files_directory, mock=False, logging_info_level=logging.INFO):
+    def __init__(
+        self, raw_files_directory, mock=False, logging_info_level=logging.INFO
+    ):
         self.raw_files_directory = raw_files_directory
-        self.data_file_path = 'documents.json'
-        self.questions = json.load(open('esos_spike/llm_static_files/questions.json'))
+        self.data_file_path = "documents.json"
+        self.questions = json.load(open("esos_spike/llm_static_files/questions.json"))
         self.documents_df = None
         self.skip_files = None
         self.mock = mock
-        self.mock_answers = json.load(open('esos_spike/llm_static_files/mock_response.json'))
+        self.mock_answers = json.load(
+            open("esos_spike/llm_static_files/mock_response.json")
+        )
         self.row_ids = None
         self.results = None
         self.results_df = None
@@ -44,7 +48,7 @@ class ParseDirectory:
         list: The names of all files in the directory.
         """
         return os.listdir(self.raw_files_directory)
-    
+
     def extract_filetype(self, file_name):
         """
         Extract the filetype from a file name.
@@ -56,7 +60,7 @@ class ParseDirectory:
         str: The filetype of the file.
         """
 
-        file_type = file_name.split('.')[-1].lower()
+        file_type = file_name.split(".")[-1].lower()
 
         return f".{file_type}"
 
@@ -74,18 +78,19 @@ class ParseDirectory:
 
         op_path = self.raw_files_directory + document_path
 
-        parsed = parser.from_file(op_path, headers={'X-Tika-Skip-Embedded': 'true'})
+        parsed = parser.from_file(op_path, headers={"X-Tika-Skip-Embedded": "true"})
         return parsed
-    
 
-    def num_tokens_from_string(self, string: str, encoding_name: str = 'gpt-4-turbo') -> int:
+    def num_tokens_from_string(
+        self, string: str, encoding_name: str = "gpt-4-turbo"
+    ) -> int:
         encoding = tiktoken.encoding_for_model(encoding_name)
         num_tokens = len(encoding.encode(string))
         return num_tokens
 
     def file_name_to_id(self, file_name: str) -> str:
         """
-        Transform a file name into an ID. This is done by replacing characters that are 
+        Transform a file name into an ID. This is done by replacing characters that are
         not allowed in an ID with an underscore. These characters are: /, \, whitespace, and .
 
         Parameters
@@ -98,8 +103,12 @@ class ParseDirectory:
         str
             The transformed ID.
         """
-        return file_name.replace('/', '_').replace('\\', '_').replace(' ', '_').replace('.', '_')
-    
+        return (
+            file_name.replace("/", "_")
+            .replace("\\", "_")
+            .replace(" ", "_")
+            .replace(".", "_")
+        )
 
     def process_documents(self):
         """
@@ -107,13 +116,13 @@ class ParseDirectory:
         """
         documents = []
         skip_files = []
-        
+
         file_names = self.get_filenames_from_directory()
-        
+
         logging.info(f"Processing {len(file_names)} files")
-        
+
         for file_name in file_names:
-            if self.extract_filetype(file_name) not in ['.pdf', '.docx', '.doc']:
+            if self.extract_filetype(file_name) not in [".pdf", ".docx", ".doc"]:
                 logging.info(f"Skipping {file_name} as filetype not supported.")
                 skip_files.append({file_name: "Unsupported file type"})
                 continue
@@ -125,23 +134,24 @@ class ParseDirectory:
                 continue
 
             try:
-                num_tokens = self.num_tokens_from_string(parsed['content'])
+                num_tokens = self.num_tokens_from_string(parsed["content"])
             except Exception as e:
                 skip_files.append({file_name: str(e)})
                 continue
 
-            documents.append({
-                'id': self.file_name_to_id(file_name),
-                'file_name': file_name,
-                'num_tokens': num_tokens,
-                'file_size' : os.path.getsize(self.raw_files_directory + file_name),
-                'metadata': parsed['metadata'],
-                'content': parsed['content']
-            })
+            documents.append(
+                {
+                    "id": self.file_name_to_id(file_name),
+                    "file_name": file_name,
+                    "num_tokens": num_tokens,
+                    "file_size": os.path.getsize(self.raw_files_directory + file_name),
+                    "metadata": parsed["metadata"],
+                    "content": parsed["content"],
+                }
+            )
 
         self.documents_df = pd.DataFrame(documents)
         self.skip_files = skip_files
-
 
     def enhance_openai(self, document_content, document_id):
         """
@@ -159,18 +169,17 @@ class ParseDirectory:
 
         if num_tokens > 120000:
             raise ValueError("The document is too long to process.")
-        
-        
+
         # Create a hash of the document content
         content_hash = hashlib.md5(content.encode()).hexdigest()
 
         # Create the cache file path
-        cache_file_path = f'data/processed/{document_id}_{content_hash}.json'
+        cache_file_path = f"data/processed/{document_id}_{content_hash}.json"
 
         # If the cache file exists, load the data from the file
         if os.path.exists(cache_file_path):
             logging.debug(f"Loading data from cache for document_id: {document_id}")
-            with open(cache_file_path, 'r') as f:
+            with open(cache_file_path, "r") as f:
                 return json.load(f)
 
         # If the cache file does not exist, process the document and save the data to the file
@@ -198,7 +207,7 @@ class ParseDirectory:
         Document to evaluate:
         {content}
         """
-        
+
         if not self.mock:
             messages = [
                 {"role": "system", "content": "You are a helpful assistant."},
@@ -210,9 +219,9 @@ class ParseDirectory:
                 model="gpt-4-turbo-preview",
                 temperature=0.5,
                 messages=messages,
-                max_tokens=4096
+                max_tokens=4096,
             )
-            
+
             # parse the response to get the JSON string, and return it as a dict
             response_dict = json.loads(response.choices[0].message.content)
 
@@ -221,14 +230,13 @@ class ParseDirectory:
                 logging.error(f"response_dict is None for document_id: {document_id}")
         else:
             response_dict = self.mock_answers
-        
+
         # Save the data to the cache file
-        with open(cache_file_path, 'w') as f:
+        with open(cache_file_path, "w") as f:
             json.dump(response_dict, f, indent=4)
 
         return response_dict
-    
-    
+
     def paralell_enhance_documents(self):
         """
         Enhance documents in parallel using OpenAI API.
@@ -244,52 +252,57 @@ class ParseDirectory:
         Returns:
         list: A list of tuples, where each tuple contains a document ID and the result of the enhance_openai method for that document.
         """
-        
+
         # wrap the function to be executed with a single argument
         def process_row(row):
             try:
-                return row['id'], self.enhance_openai(row['content'], row['id'])
+                return row["id"], self.enhance_openai(row["content"], row["id"])
             except ValueError as e:
                 logging.error(f"skipping {row['id']}: {str(e)}")
 
         # Define the maximum number of concurrent threads to use
-        max_threads = 60 
+        max_threads = 60
 
         # Use the ThreadPoolExecutor to execute the function on each item in parallel
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
             # Submit the function to the executor for each item in the series
-            futures = [executor.submit(process_row, row) for id,row in self.documents_df.iterrows()]
+            futures = [
+                executor.submit(process_row, row)
+                for id, row in self.documents_df.iterrows()
+            ]
 
             # Use tqdm to display a progress bar for the parallel execution
-            for _ in tqdm(concurrent.futures.as_completed(futures), total=len(self.documents_df)):
+            for _ in tqdm(
+                concurrent.futures.as_completed(futures), total=len(self.documents_df)
+            ):
                 pass
 
             # Collect the results from the futures as they complete
             results = [future.result() for future in as_completed(futures)]
 
         return results
-    
-    def enhance_documents(self, from_cache = True):
+
+    def enhance_documents(self, from_cache=True):
         """
         Wrapper function to run paralell_enhance_documents and save the results to a pickle file.
-        By default, it loads the results from the cache file. Sett from_cache to False to re-run 
+        By default, it loads the results from the cache file. Sett from_cache to False to re-run
         the process and overwrite the cache file.
-        
-        Note that this is independed from the document level caching which is used in 
+
+        Note that this is independed from the document level caching which is used in
         `enhance_openai()`. To clear this cache you will need to manually delete
         the files in `data/processed`.
-        
+
         Parameters:
         from_cache (bool): Load the results from the cache file. Default is True.
-        
+
         Returns:
         list: A list of tuples, where each tuple contains a document ID and the result of the enhance_openai method for that document.
         """
-        
+
         if from_cache:
             logging.debug("Loading results from cache held in data/cached/results.pkl")
             try:
-                with open('data/cached/results.pkl', 'rb') as f:
+                with open("data/cached/results.pkl", "rb") as f:
                     results = pickle.load(f)
             except FileNotFoundError as e:
                 logging.error("No cache file was found. Set `from_cache=False`...")
@@ -297,14 +310,13 @@ class ParseDirectory:
         else:
             logging.debug("Running enhancement and saving to data/cached/results.pkl")
             results = self.paralell_enhance_documents()
-            with open('data/cached/results.pkl', 'wb+') as f:
+            with open("data/cached/results.pkl", "wb+") as f:
                 pickle.dump(results, f)
-                
+
         # Remove none values from the results list
-        results_cleaned = [result for result in results if result is not None]        
+        results_cleaned = [result for result in results if result is not None]
         self.results = results_cleaned
-    
-    
+
     def load_results_df(self):
         """
         Load the results into a pandas DataFrame.
@@ -316,24 +328,27 @@ class ParseDirectory:
         and appends the DataFrame to a list.
         Finally, it concatenates all the DataFrames in the list into a single DataFrame and stores it in the results_df attribute.
         """
-        
+
         result_df_list = []
 
         for result in self.results:
-            result_df = pd.json_normalize(result[1]['questions'])
+            result_df = pd.json_normalize(result[1]["questions"])
             result_df.index = [result[0] for _ in range(len(result_df))]
             result_df_list.append(result_df)
 
         self.results_df = pd.concat(result_df_list)
 
-if __name__ == '__main__':
-   
-    parse_dir = ParseDirectory('data/raw-ESOS-reports/', mock=False, logging_info_level=logging.DEBUG)
+
+if __name__ == "__main__":
+
+    parse_dir = ParseDirectory(
+        "data/raw-ESOS-reports/", mock=False, logging_info_level=logging.DEBUG
+    )
 
     parse_dir.process_documents()
-    
+
     parse_dir.enhance_documents(from_cache=True)
-    
+
     parse_dir.load_results_df()
-    
+
     print(len(parse_dir.results_df))
