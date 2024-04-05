@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.3.8"
+__generated_with = "0.3.4"
 app = marimo.App(width="medium", layout_file="layouts/dashboard.grid.json")
 
 
@@ -12,7 +12,8 @@ def __():
     import marimo as mo
     import matplotlib.pyplot as plt
     import altair as alt
-    return ParseDirectory, alt, logging, mo, pd, plt
+    import os
+    return ParseDirectory, alt, logging, mo, os, pd, plt
 
 
 @app.cell
@@ -133,7 +134,170 @@ def __(parse_dir):
 
 
 @app.cell
-def __():
+def __(mo):
+    mo.md(
+        """
+        # UI elements sandbox
+        UI ideas displayed below:
+        """
+    )
+    return
+
+
+@app.cell
+def __(mo):
+    mo.md("# Documents overview")
+    return
+
+
+@app.cell
+def __(mo, parse_dir):
+    # How long are files?
+    out_table = parse_dir.documents_df[["file_name", "num_tokens"]]
+    out_table["num_pages"] = parse_dir.documents_df["metadata"].apply(lambda x: x["xmpTPg:NPages"])
+
+    mo.vstack([
+        mo.md("How long are files?"),
+        mo.ui.table(out_table)
+    ])
+
+    return out_table,
+
+
+@app.cell
+def __(mo, parse_dir, pd):
+    mo.vstack(
+        [mo.md("Which files have been rejected and why?"),
+        mo.ui.table(pd.DataFrame(parse_dir.skip_files))]
+    )
+    return
+
+
+@app.cell
+def __(mo):
+    mo.md("# One page document summary")
+    return
+
+
+@app.cell
+def __(parse_dir):
+    file_name = "AD Comms_ESOS 2019_Signed ESOS185262_20190912.pdf"
+    file_id = parse_dir.documents_df.loc[parse_dir.documents_df["file_name"] == file_name]["id"].iloc[0]
+    return file_id, file_name
+
+
+@app.cell
+def __(file_name, mo, os):
+    # PDF viewer doesn't seem to work :(
+    with open(os.path.join("data/raw-ESOS-reports", file_name), "rb") as file_obj:
+        mo.pdf(src=file_obj)
+    return file_obj,
+
+
+@app.cell
+def __(file_id, file_name, mo, out_table):
+    # One page document summary
+
+    mo.vstack([
+        mo.md(f"## Document summary for {file_name}"),
+        mo.md(f"Document length (pages): {out_table.loc[out_table['file_name'] == file_name]['num_pages'].iloc[0]}"),
+        mo.md(f"Document length (tokens): {out_table.loc[out_table['file_name'] == file_name]['num_tokens'].iloc[0]}"),
+        mo.md(f"Document id: {file_id}")
+    ])
+
+    return
+
+
+@app.cell
+def __(file_id, mo, parse_dir, pd):
+    # Question scores for this document
+    file_results = parse_dir.results_df.loc[file_id]
+    questions = pd.DataFrame(parse_dir.questions["questions"])["question_text"]
+    selected_question = mo.ui.dropdown(questions)
+    return file_results, questions, selected_question
+
+
+@app.cell
+def __(file_results, mo, selected_question):
+    mo.vstack([
+        mo.md("### Question scores for this document"),
+        mo.ui.table(file_results[["question_text", "score_out_of_10"]]),
+        selected_question,
+
+        
+    ])
+    return
+
+
+@app.cell
+def __(file_results, mo, selected_question):
+    mo.vstack([
+        
+        mo.hstack([
+            mo.md(f"{selected_question.value}"),
+            mo.md(f"Score: {file_results.loc[file_results['question_text'] == selected_question.value]['score_out_of_10'].iloc[0]}")
+        ]),
+        mo.md("... Placeholder for a comparison to other documents for this question")
+    ])
+
+
+
+    return
+
+
+@app.cell
+def __(mo):
+    # Dropdown for overall navigation
+    views = ["Overview", "Document detailed view"]
+
+
+    view_selector = mo.ui.dropdown(views, allow_select_none=False, value="Overview")
+    view_selector
+
+
+    return view_selector, views
+
+
+@app.cell
+def __(mo, view_selector):
+    text_form = mo.ui.text(value="test")
+
+    if view_selector.value == "Overview":
+        title_elem = mo.vstack([
+            mo.md("# Overview"),
+            text_form
+        ])
+
+    elif view_selector.value == "Document detailed view":
+        title_elem = mo.vstack([
+            mo.md("# Document detailed view"),
+            
+        ])
+
+    return text_form, title_elem
+
+
+@app.cell
+def __(title_elem):
+    # Display all input elements
+    title_elem
+
+    return
+
+
+@app.cell
+def __(mo, text_form, view_selector):
+    if view_selector == "Overview":
+        display_text_input = mo.vstack([mo.md(f"Text inputted: {text_form.value}")])
+    else:
+        display_text_input = None
+    return display_text_input,
+
+
+@app.cell
+def __(display_text_input):
+    # Sadly we can't display secondary UI elements conditionally
+    display_text_input
     return
 
 

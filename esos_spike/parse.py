@@ -122,19 +122,22 @@ class ParseDirectory:
         for file_name in file_names:
             if self.extract_filetype(file_name) not in [".pdf", ".docx", ".doc"]:
                 logging.info(f"Skipping {file_name} as filetype not supported.")
-                skip_files.append({file_name: "Unsupported file type"})
+                skip_files.append({"file_name": file_name,
+                                   "reason": "Unsupported file type"})
                 continue
 
             try:
                 parsed = self.parse_document(file_name)
             except Exception as e:
-                skip_files.append({file_name: str(e)})
+                skip_files.append({"file_name": file_name,
+                                   "reason": str(e)})
                 continue
 
             try:
                 num_tokens = self.num_tokens_from_string(parsed["content"])
             except Exception as e:
-                skip_files.append({file_name: str(e)})
+                skip_files.append({"file_name": file_name,
+                                   "reason": str(e)})
                 continue
 
             documents.append(
