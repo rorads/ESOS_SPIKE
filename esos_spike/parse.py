@@ -19,8 +19,6 @@ doc_cache = diskcache.Cache(".doc_cache")
 # load openai api key from .env file
 load_dotenv()
 
-client = OpenAI()
-
 
 class ParseDirectory:
     def __init__(
@@ -209,6 +207,7 @@ class ParseDirectory:
         """
 
         if not self.mock:
+            client = OpenAI()
             messages = [
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt},

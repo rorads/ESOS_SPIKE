@@ -18,6 +18,8 @@ To use this toolkit, you'll need:
 - Python 3.8 or newer.
 - An active internet connection for API requests.
 - An OpenAI API key (make sure you have access to OpenAI and have generated an API key).
+- Poetry 
+- Java 8 or higher
 
 ## Quickstart
 
@@ -39,9 +41,14 @@ Follow these setup steps to get started with the ESOS Report Assessment Toolkit:
    ```
 
 4. **Run the Software**:
-   You can start the analysis by running the `dashboard.py` file:
+   Start the Poetry environment with 
    ```bash
-   python dashboard.py
+   poetry shell
+   ```
+
+   You can start the analysis by running the `dashboard.py` file with Marimo:
+   ```bash
+   marimo edit dashboard.py
    ```
    This script initializes the process of parsing documents, submitting content to OpenAI for evaluation, and storing the results.
 
