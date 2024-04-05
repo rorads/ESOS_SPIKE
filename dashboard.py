@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.3.4"
+__generated_with = "0.3.8"
 app = marimo.App(width="medium", layout_file="layouts/dashboard.grid.json")
 
 
@@ -12,7 +12,6 @@ def __():
     import marimo as mo
     import matplotlib.pyplot as plt
     import altair as alt
-
     return ParseDirectory, alt, logging, mo, pd, plt
 
 
@@ -29,20 +28,11 @@ def __(ParseDirectory, logging):
 
 
 @app.cell
-def __(parse_dir):
-    parse_dir.results_df
-    return
-
-
-@app.cell
-def __(parse_dir):
-    parse_dir.documents_df
-    return
-
-
-@app.cell
-def __(parse_dir):
-    parse_dir.documents_df['num_tokens'].plot(kind='hist')
+def __(mo, parse_dir):
+    mo.vstack([
+        mo.md("Distribution of document lengh in tokens"),
+        parse_dir.documents_df['num_tokens'].plot(kind='hist')
+    ])
     return
 
 
@@ -57,8 +47,6 @@ def __(mo, parse_dir):
 
     unique_documents = parse_dir.documents_df['id'].unique()
     document = mo.ui.dropdown(unique_documents, unique_documents[0], full_width=True)
-
-
     return (
         avg_score_table,
         document,
@@ -96,8 +84,8 @@ def __(parse_dir, plt, question):
 
 
 @app.cell
-def __(mo, parse_dir):
-    mo.ui.table(parse_dir.results_df[parse_dir.results_df['key'] == 'ReportStructure_2'], selection=None)
+def __():
+    # mo.ui.table(parse_dir.results_df[parse_dir.results_df['key'] == 'ReportStructure_2'], selection=None)
     return
 
 
@@ -116,24 +104,37 @@ def __(fig, mo, question):
     #     parse_dir.results_df[document.value] if document.value in parse_dir.results_df.index else mo.md("Document not parsed.")
     # ])
 
-    mo.tabs({
+    mo.ui.tabs({
         "Scores by Question":score_tab,
         "Test": mo.md("Ipsum")
     })
     return score_tab,
 
 
-app._unparsable_cell(
-    r"""
-    test_grid = []
+@app.cell
+def __(mo):
+    mo.ui.tabs({
+        "Readme": mo.md(open('README.md').read()),
+        "Methodology": mo.md(open("docs/method.md").read())
+    })
+    return
 
-    for letter in ['a', 'b', 'c']:
-        
-        for number in [1, 2, 3]:
-            
-    """,
-    name="__"
-)
+
+@app.cell
+def __(mo, parse_dir):
+    mo.ui.table(parse_dir.results_df.pivot_table(index=['key', 'question_text'], values='score_out_of_10', aggfunc='mean').sort_values('score_out_of_10', ascending=False), selection=None)
+    return
+
+
+@app.cell
+def __(parse_dir):
+    parse_dir.results_df.head()
+    return
+
+
+@app.cell
+def __():
+    return
 
 
 if __name__ == "__main__":
